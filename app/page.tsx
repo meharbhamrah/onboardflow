@@ -8,9 +8,6 @@ export default function Home() {
     <>
       <Navbar />
       <Hero />
-        <div className="bg-red-500 p-10 text-white text-4xl">
-            PAGE.TSX TEST
-        </div>
       <Features />
       <Footer />
     </>
