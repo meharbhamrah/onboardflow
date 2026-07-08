@@ -1,8 +1,8 @@
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import Features from "../components/Features";
-import Trust from "../components/Trust";
 import Footer from "../components/Footer";
+import HowItWorks from "../components/HowItWorks";
 
 export default function Home() {
   return (
@@ -10,8 +10,9 @@ export default function Home() {
       <Navbar />
       <Hero />
       <Features />
-      <Trust />
+      <HowItWorks />
       <Footer />
+
     </>
   );
 }
