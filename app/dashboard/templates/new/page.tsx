@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+  createTemplate,
+  createTemplateFields,
+} from "@/lib/templates";
 
 type Field = {
   id: number;
@@ -18,8 +22,8 @@ export default function NewTemplatePage() {
   const [loading, setLoading] = useState(false);
 
   function addField(type: string) {
-    setFields([
-      ...fields,
+    setFields((prev) => [
+      ...prev,
       {
         id: Date.now(),
         label: "",
@@ -29,101 +33,111 @@ export default function NewTemplatePage() {
   }
 
   function updateField(id: number, value: string) {
-    setFields(
-      fields.map((field) =>
-        field.id === id ? { ...field, label: value } : field
+    setFields((prev) =>
+      prev.map((field) =>
+        field.id === id
+          ? { ...field, label: value }
+          : field
       )
     );
   }
 
   function removeField(id: number) {
-    setFields(fields.filter((field) => field.id !== id));
+    setFields((prev) =>
+      prev.filter((field) => field.id !== id)
+    );
   }
 
-async function saveTemplate() {
-  if (!templateName.trim()) {
-    alert("Please enter a template name.");
-    return;
+  async function saveTemplate() {
+    if (!templateName.trim()) {
+      alert("Please enter a template name.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) throw new Error("Not logged in");
+
+      const template = await createTemplate(
+        templateName,
+        user.id
+      );
+
+      await createTemplateFields(
+        template.id,
+        user.id,
+        fields
+      );
+
+      alert("Template saved successfully!");
+
+      router.push("/dashboard/templates");
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
-
-  setLoading(true);
-
-  // Get the currently logged-in user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    alert("You must be logged in.");
-    setLoading(false);
-    return;
-  }
-
-  const { error } = await supabase.from("templates").insert({
-    name: templateName,
-    user_id: user.id,
-  });
-
-  setLoading(false);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  alert("Template created successfully!");
-
-  router.push("/dashboard/templates");
-}
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-4xl font-bold text-zinc-900">
+      <h1 className="text-4xl font-bold">
         Create Template
       </h1>
 
       <p className="mt-2 text-zinc-600">
-        Build your onboarding form.
+        Build your onboarding template.
       </p>
 
-      <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
+      <div className="mt-8 rounded-2xl border bg-white p-8">
         <label className="mb-2 block font-medium">
           Template Name
         </label>
 
         <input
           value={templateName}
-          onChange={(e) => setTemplateName(e.target.value)}
+          onChange={(e) =>
+            setTemplateName(e.target.value)
+          }
+          className="w-full rounded-lg border px-4 py-3 text-zinc-900"
           placeholder="SEO Client Onboarding"
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400"
         />
       </div>
 
-      <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
+      <div className="mt-8 rounded-2xl border bg-white p-8">
         <h2 className="text-2xl font-semibold">
-          Add Fields
+          Fields
         </h2>
 
-        <div className="mt-6 flex flex-wrap gap-4">
+        <div className="mt-6 flex gap-3 flex-wrap">
           <button
             onClick={() => addField("Text")}
-            className="rounded-lg bg-black px-5 py-3 text-white"
+            className="rounded-lg bg-black px-4 py-2 text-white"
           >
             + Text
           </button>
 
           <button
             onClick={() => addField("Textarea")}
-            className="rounded-lg bg-black px-5 py-3 text-white"
+            className="rounded-lg bg-black px-4 py-2 text-white"
           >
             + Textarea
           </button>
 
           <button
             onClick={() => addField("File")}
-            className="rounded-lg bg-black px-5 py-3 text-white"
+            className="rounded-lg bg-black px-4 py-2 text-white"
           >
-            + File Upload
+            + File
           </button>
         </div>
 
@@ -131,16 +145,18 @@ async function saveTemplate() {
           {fields.map((field) => (
             <div
               key={field.id}
-              className="rounded-xl border border-zinc-200 p-4"
+              className="rounded-xl border p-4"
             >
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-zinc-500">
+              <div className="flex justify-between">
+                <span className="text-sm text-zinc-500">
                   {field.type}
-                </p>
+                </span>
 
                 <button
-                  onClick={() => removeField(field.id)}
-                  className="text-sm text-red-600"
+                  onClick={() =>
+                    removeField(field.id)
+                  }
+                  className="text-red-600"
                 >
                   Delete
                 </button>
@@ -149,10 +165,13 @@ async function saveTemplate() {
               <input
                 value={field.label}
                 onChange={(e) =>
-                  updateField(field.id, e.target.value)
+                  updateField(
+                    field.id,
+                    e.target.value
+                  )
                 }
+                className="mt-3 w-full rounded-lg border px-4 py-3 text-zinc-900"
                 placeholder="Field label"
-                className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900"
               />
             </div>
           ))}
@@ -161,7 +180,7 @@ async function saveTemplate() {
         <button
           onClick={saveTemplate}
           disabled={loading}
-          className="mt-8 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+          className="mt-8 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white disabled:opacity-50"
         >
           {loading ? "Saving..." : "Save Template"}
         </button>
