@@ -40,29 +40,41 @@ export default function NewTemplatePage() {
     setFields(fields.filter((field) => field.id !== id));
   }
 
-  async function saveTemplate() {
-    if (!templateName.trim()) {
-      alert("Please enter a template name.");
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await supabase.from("templates").insert({
-      name: templateName,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    alert("Template created successfully!");
-
-    router.push("/dashboard/templates");
+async function saveTemplate() {
+  if (!templateName.trim()) {
+    alert("Please enter a template name.");
+    return;
   }
+
+  setLoading(true);
+
+  // Get the currently logged-in user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    alert("You must be logged in.");
+    setLoading(false);
+    return;
+  }
+
+  const { error } = await supabase.from("templates").insert({
+    name: templateName,
+    user_id: user.id,
+  });
+
+  setLoading(false);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Template created successfully!");
+
+  router.push("/dashboard/templates");
+}
 
   return (
     <div className="max-w-4xl">
