@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 type Field = {
   id: number;
@@ -9,8 +11,11 @@ type Field = {
 };
 
 export default function NewTemplatePage() {
+  const router = useRouter();
+
   const [templateName, setTemplateName] = useState("");
   const [fields, setFields] = useState<Field[]>([]);
+  const [loading, setLoading] = useState(false);
 
   function addField(type: string) {
     setFields([
@@ -21,6 +26,42 @@ export default function NewTemplatePage() {
         type,
       },
     ]);
+  }
+
+  function updateField(id: number, value: string) {
+    setFields(
+      fields.map((field) =>
+        field.id === id ? { ...field, label: value } : field
+      )
+    );
+  }
+
+  function removeField(id: number) {
+    setFields(fields.filter((field) => field.id !== id));
+  }
+
+  async function saveTemplate() {
+    if (!templateName.trim()) {
+      alert("Please enter a template name.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.from("templates").insert({
+      name: templateName,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert("Template created successfully!");
+
+    router.push("/dashboard/templates");
   }
 
   return (
@@ -42,7 +83,7 @@ export default function NewTemplatePage() {
           value={templateName}
           onChange={(e) => setTemplateName(e.target.value)}
           placeholder="SEO Client Onboarding"
-          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900"
+          className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400"
         />
       </div>
 
@@ -80,17 +121,38 @@ export default function NewTemplatePage() {
               key={field.id}
               className="rounded-xl border border-zinc-200 p-4"
             >
-              <p className="text-sm text-zinc-500">
-                {field.type}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-zinc-500">
+                  {field.type}
+                </p>
+
+                <button
+                  onClick={() => removeField(field.id)}
+                  className="text-sm text-red-600"
+                >
+                  Delete
+                </button>
+              </div>
 
               <input
+                value={field.label}
+                onChange={(e) =>
+                  updateField(field.id, e.target.value)
+                }
                 placeholder="Field label"
                 className="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900"
               />
             </div>
           ))}
         </div>
+
+        <button
+          onClick={saveTemplate}
+          disabled={loading}
+          className="mt-8 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+        >
+          {loading ? "Saving..." : "Save Template"}
+        </button>
       </div>
     </div>
   );
