@@ -27,7 +27,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-6">
+    <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-6 text-zinc-900">
       <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
         <h1 className="text-3xl font-bold text-zinc-900">
           Welcome back
@@ -43,8 +43,8 @@ export default function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none focus:border-black"
             required
+            className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 caret-black outline-none focus:border-black"
           />
 
           <input
@@ -52,13 +52,13 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none focus:border-black"
             required
+            className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder:text-zinc-400 caret-black outline-none focus:border-black"
           />
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-black py-3 font-semibold text-white hover:bg-zinc-800"
+            className="w-full rounded-lg bg-black py-3 font-semibold text-white transition hover:bg-zinc-800"
           >
             Log In
           </button>
