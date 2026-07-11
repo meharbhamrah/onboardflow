@@ -2,41 +2,53 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { supabase } from "@/lib/supabase";
 import {
   createTemplate,
   createTemplateFields,
 } from "@/lib/templates";
 
-type Field = {
-  id: number;
-  label: string;
-  type: string;
-};
+import FieldTypes from "@/components/templates/FieldTypes";
+import FieldCard from "@/components/templates/FieldCard";
+
+import {
+  FieldType,
+  TemplateField,
+} from "@/types/template";
 
 export default function NewTemplatePage() {
   const router = useRouter();
 
   const [templateName, setTemplateName] = useState("");
-  const [fields, setFields] = useState<Field[]>([]);
+
+  const [fields, setFields] = useState<
+    TemplateField[]
+  >([]);
+
   const [loading, setLoading] = useState(false);
 
-  function addField(type: string) {
+  function addField(type: FieldType) {
     setFields((prev) => [
       ...prev,
       {
         id: Date.now(),
         label: "",
         type,
+        required: false,
+        placeholder: "",
       },
     ]);
   }
 
-  function updateField(id: number, value: string) {
+  function updateField(
+    id: number,
+    updates: Partial<TemplateField>
+  ) {
     setFields((prev) =>
       prev.map((field) =>
         field.id === id
-          ? { ...field, label: value }
+          ? { ...field, ...updates }
           : field
       )
     );
@@ -48,9 +60,9 @@ export default function NewTemplatePage() {
     );
   }
 
-  async function saveTemplate() {
+  async function save() {
     if (!templateName.trim()) {
-      alert("Please enter a template name.");
+      alert("Template name required.");
       return;
     }
 
@@ -74,31 +86,31 @@ export default function NewTemplatePage() {
         fields
       );
 
-      alert("Template saved successfully!");
-
       router.push("/dashboard/templates");
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      );
+      if (err instanceof Error) {
+        alert(err.message);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="max-w-4xl">
-      <h1 className="text-4xl font-bold">
-        Create Template
-      </h1>
+    <div className="mx-auto max-w-5xl">
 
-      <p className="mt-2 text-zinc-600">
-        Build your onboarding template.
-      </p>
+      <div className="mb-10">
+        <h1 className="text-4xl font-bold">
+          Create Template
+        </h1>
 
-      <div className="mt-8 rounded-2xl border bg-white p-8">
+        <p className="mt-2 text-zinc-600">
+          Build a reusable onboarding template.
+        </p>
+      </div>
+
+      <div className="rounded-xl border bg-white p-6">
+
         <label className="mb-2 block font-medium">
           Template Name
         </label>
@@ -108,81 +120,58 @@ export default function NewTemplatePage() {
           onChange={(e) =>
             setTemplateName(e.target.value)
           }
-          className="w-full rounded-lg border px-4 py-3 text-zinc-900"
           placeholder="SEO Client Onboarding"
+          className="w-full rounded-lg border px-4 py-3 text-zinc-900"
         />
       </div>
 
-      <div className="mt-8 rounded-2xl border bg-white p-8">
-        <h2 className="text-2xl font-semibold">
-          Fields
+      <div className="mt-8 rounded-xl border bg-white p-6">
+
+        <h2 className="text-xl font-semibold">
+          Add Fields
         </h2>
 
-        <div className="mt-6 flex gap-3 flex-wrap">
-          <button
-            onClick={() => addField("Text")}
-            className="rounded-lg bg-black px-4 py-2 text-white"
-          >
-            + Text
-          </button>
-
-          <button
-            onClick={() => addField("Textarea")}
-            className="rounded-lg bg-black px-4 py-2 text-white"
-          >
-            + Textarea
-          </button>
-
-          <button
-            onClick={() => addField("File")}
-            className="rounded-lg bg-black px-4 py-2 text-white"
-          >
-            + File
-          </button>
+        <div className="mt-6">
+          <FieldTypes onSelect={addField} />
         </div>
 
         <div className="mt-8 space-y-4">
+
           {fields.map((field) => (
-            <div
+            <FieldCard
               key={field.id}
-              className="rounded-xl border p-4"
-            >
-              <div className="flex justify-between">
-                <span className="text-sm text-zinc-500">
-                  {field.type}
-                </span>
-
-                <button
-                  onClick={() =>
-                    removeField(field.id)
-                  }
-                  className="text-red-600"
-                >
-                  Delete
-                </button>
-              </div>
-
-              <input
-                value={field.label}
-                onChange={(e) =>
-                  updateField(
-                    field.id,
-                    e.target.value
-                  )
-                }
-                className="mt-3 w-full rounded-lg border px-4 py-3 text-zinc-900"
-                placeholder="Field label"
-              />
-            </div>
+              field={field}
+              onLabelChange={(value) =>
+                updateField(field.id, {
+                  label: value,
+                })
+              }
+              onRequiredChange={(value) =>
+                updateField(field.id, {
+                  required: value,
+                })
+              }
+              onDelete={() =>
+                removeField(field.id)
+              }
+            />
           ))}
+
+          {fields.length === 0 && (
+            <div className="rounded-lg border border-dashed p-10 text-center text-zinc-500">
+              No fields added yet.
+            </div>
+          )}
         </div>
 
         <button
-          onClick={saveTemplate}
+          onClick={save}
           disabled={loading}
-          className="mt-8 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white disabled:opacity-50"
+          className="mt-8 rounded-lg bg-black px-6 py-3 font-semibold text-white disabled:opacity-50"
         >
-          {loading ? "Saving..." : "Save Template"}
+          {loading
+            ? "Saving..."
+            : "Save Template"}
         </button>
       </div>
     </div>

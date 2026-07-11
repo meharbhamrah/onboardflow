@@ -1,6 +1,10 @@
 import { supabase } from "./supabase";
+import { TemplateField } from "@/types/template";
 
-export async function createTemplate(name: string, userId: string) {
+export async function createTemplate(
+  name: string,
+  userId: string
+) {
   const { data, error } = await supabase
     .from("templates")
     .insert({
@@ -18,18 +22,19 @@ export async function createTemplate(name: string, userId: string) {
 export async function createTemplateFields(
   templateId: string,
   userId: string,
-  fields: {
-    label: string;
-    type: string;
-  }[]
+  fields: TemplateField[]
 ) {
+  if (fields.length === 0) return;
+
   const { error } = await supabase.from("template_fields").insert(
     fields.map((field, index) => ({
       template_id: templateId,
+      user_id: userId,
       label: field.label,
       field_type: field.type,
+      required: field.required,
+      placeholder: field.placeholder ?? "",
       field_order: index,
-      user_id: userId,
     }))
   );
 

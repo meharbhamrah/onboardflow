@@ -5,13 +5,17 @@ export async function assignTemplate(
   clientId: string,
   templateId: string
 ) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("client_onboardings")
     .insert({
       user_id: userId,
       client_id: clientId,
       template_id: templateId,
-    });
+    })
+    .select()
+    .single();
 
   if (error) throw error;
+
+  return data;
 }
