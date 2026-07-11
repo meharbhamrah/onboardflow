@@ -110,9 +110,13 @@ export default function TemplatesPage() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-zinc-900">
+
+                <Link
+                    href={`/dashboard/templates/${template.id}`}
+                    className="text-xl font-semibold text-zinc-900 hover:underline"
+                  >
                     {template.name}
-                  </h2>
+                </Link>
 
                   <p className="mt-2 text-sm text-zinc-500">
                     Created{" "}
