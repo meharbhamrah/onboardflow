@@ -7,6 +7,7 @@ import {
   createClient,
   deleteClient,
 } from "@/lib/clients";
+import { assignTemplate } from "@/lib/onboardings";
 
 type Client = {
   id: string;
@@ -16,28 +17,41 @@ type Client = {
   status: string;
 };
 
+type Template = {
+  id: string;
+  name: string;
+};
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadClients();
+    loadData();
   }, []);
 
-  async function loadClients() {
+  async function loadData() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) return;
 
-    const data = await getClients(user.id);
+    const clientsData = await getClients(user.id);
 
-    setClients(data);
+    const { data: templatesData } = await supabase
+      .from("templates")
+      .select("id, name")
+      .eq("user_id", user.id);
+
+    setClients(clientsData);
+    setTemplates(templatesData || []);
     setLoading(false);
   }
 
@@ -59,7 +73,24 @@ export default function ClientsPage() {
     setEmail("");
     setCompany("");
 
-    loadClients();
+    loadData();
+  }
+
+  async function handleAssign(clientId: string) {
+    if (!selectedTemplate) {
+      alert("Select a template first.");
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    await assignTemplate(user.id, clientId, selectedTemplate);
+
+    alert("Template assigned successfully!");
   }
 
   async function handleDelete(id: string) {
@@ -67,20 +98,14 @@ export default function ClientsPage() {
 
     await deleteClient(id);
 
-    loadClients();
+    loadData();
   }
 
   return (
-    <div className="max-w-5xl">
-      <h1 className="text-4xl font-bold">
-        Clients
-      </h1>
+    <div className="max-w-6xl">
+      <h1 className="text-4xl font-bold">Clients</h1>
 
-      <p className="mt-2 text-zinc-600">
-        Manage your agency clients.
-      </p>
-
-      <div className="mt-8 rounded-2xl border bg-white p-6">
+      <div className="mt-8 rounded-xl border bg-white p-6">
         <div className="grid gap-4 md:grid-cols-3">
           <input
             placeholder="Client Name"
@@ -106,51 +131,81 @@ export default function ClientsPage() {
 
         <button
           onClick={handleCreate}
-          className="mt-6 rounded-lg bg-black px-6 py-3 font-semibold text-white"
+          className="mt-6 rounded-lg bg-black px-6 py-3 text-white"
         >
           Add Client
         </button>
       </div>
 
-      <div className="mt-8 space-y-4">
+      <div className="mt-8">
         {loading ? (
           <p>Loading...</p>
-        ) : clients.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-10 text-center">
-            No clients yet.
-          </div>
         ) : (
-          clients.map((client) => (
-            <div
-              key={client.id}
-              className="flex items-center justify-between rounded-xl border bg-white p-5"
-            >
-              <div>
-                <h2 className="font-semibold">
-                  {client.name}
-                </h2>
-
-                <p className="text-sm text-zinc-500">
-                  {client.email}
-                </p>
-
-                <p className="text-sm text-zinc-500">
-                  {client.company}
-                </p>
-
-                <span className="mt-2 inline-block rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
-                  {client.status}
-                </span>
-              </div>
-
-              <button
-                onClick={() => handleDelete(client.id)}
-                className="rounded-lg bg-red-600 px-4 py-2 text-white"
+          <div className="space-y-4">
+            {clients.map((client) => (
+              <div
+                key={client.id}
+                className="rounded-xl border bg-white p-6"
               >
-                Delete
-              </button>
-            </div>
-          ))
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      {client.name}
+                    </h2>
+
+                    <p>{client.email}</p>
+
+                    <p>{client.company}</p>
+
+                    <span className="mt-2 inline-block rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
+                      {client.status}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <select
+                      value={selectedTemplate}
+                      onChange={(e) =>
+                        setSelectedTemplate(e.target.value)
+                      }
+                      className="rounded-lg border px-4 py-2 text-zinc-900"
+                    >
+                      <option value="">
+                        Select Template
+                      </option>
+
+                      {templates.map((template) => (
+                        <option
+                          key={template.id}
+                          value={template.id}
+                        >
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      onClick={() =>
+                        handleAssign(client.id)
+                      }
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+                    >
+                      Assign Template
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        handleDelete(client.id)
+                      }
+                      className="rounded-lg bg-red-600 px-4 py-2 text-white"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
